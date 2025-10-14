@@ -7,21 +7,18 @@ __pycache__/
 .venv/
 env/
 
-# Data and model outputs
-data/
+# Model & data
 runs/
+data/
 *.h5
 *.hdf5
-*.pkl
 *.ckpt
+*.pkl
 
-# Logs and temp files
+# Logs and cache
 logs/
 tmp/
-.DS_Store
-
-# VS Code settings
-.vscode/
-
-# Streamlit cache
 .streamlit/
+
+# Editor
+.vscode/
