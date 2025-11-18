@@ -1,170 +1,237 @@
-# 🩻 Pneumonia Detection using Convolutional Neural Networks (CNN)
+# Pneumonia detection using Convolutional Neural Networks
 
-A deep learning project for detecting **Pneumonia** from chest X-ray images using a **DenseNet121**-based Convolutional Neural Network.  
-The project includes model training, fine-tuning, Grad-CAM visualization for interpretability, and a **Streamlit web app** for easy deployment and testing.
+Lightweight, reproducible implementation of a convolutional neural network (CNN) to detect pneumonia from chest X-ray images using TensorFlow / Keras.
 
----
+## Quick links
+- App: [app.py](app.py)  
+- CLI entry: [main.py](main.py) — calls [`train.run_training`](src/train.py), [`evaluate.run_evaluation`](src/evaluate.py), [`predict.run_prediction`](src/predict.py)  
+- Training script: [src/train.py](src/train.py) — contains [`train.run_training`](src/train.py)  
+- Evaluation script: [src/evaluate.py](src/evaluate.py) — contains [`evaluate.run_evaluation`](src/evaluate.py)  
+- Prediction script: [src/predict.py](src/predict.py) — contains [`predict.run_prediction`](src/predict.py)  
+- Grad-CAM util: [`src.utils.generate_gradcam`](src/utils.py) — [src/utils.py](src/utils.py)  
+- Dataset root: [Data/chest_xray](Data/chest_xray)  
+- Saved model (example): [runs/pneumonia_densenet121.h5](runs/pneumonia_densenet121.h5)  
+- Dependencies: [requirements.txt](requirements.txt)  
+- Git ignore: [.gitignore](.gitignore)
 
-## 🚀 Features
+## Overview
+This project trains a DenseNet121-based classifier to distinguish between NORMAL and PNEUMONIA chest X-rays. It includes training, evaluation, single-image prediction, a Streamlit demo app, and a Grad-CAM utility for visualizing model attention.
 
-- 🧠 **Transfer Learning with DenseNet121**
-- 🩺 **Binary Classification:** Normal vs. Pneumonia
-- 🌈 **Grad-CAM Heatmaps** for explainable AI
-- 💻 **Streamlit Web App** for user-friendly predictions
-- 📈 **Evaluation Metrics:** Accuracy and ROC-AUC
+## Dataset
+Expected layout (already present under [Data/chest_xray](Data/chest_xray)):
 
----
+data/chest_xray/
+- train/
+  - NORMAL/
+  - PNEUMONIA/
+- val/
+  - NORMAL/
+  - PNEUMONIA/
+- test/
+  - NORMAL/
+  - PNEUMONIA/
 
-## 🧩 Project Structure
+Ensure patient-level separation between splits to avoid data leakage.
 
-pneumonia-cnn/
-│
-├── app.py # Streamlit web app for prediction and Grad-CAM
-├── train.py # Training script for DenseNet121
-│
-├── src/
-│ └── utils.py # Utility functions (Grad-CAM, image preprocessing, etc.)
-│
-├── data/ # Dataset directory (train/val/test)
-│
-├── runs/ # Model outputs (e.g., pneumonia_densenet121.h5)
-│
-├── requirements.txt # Python dependencies
-└── README.md # Project documentation
+## Requirements
+- Python 3.8+
+- GPU recommended for training
+- Install dependencies:
+  - pip install -r [requirements.txt](requirements.txt)
 
-yaml
-Copy code
+## Install & setup
+1. Clone the repository.
+2. Create and activate a virtual environment:
+   - python -m venv .venv
+   - Windows: .venv\Scripts\activate
+   - macOS/Linux: source .venv/bin/activate
+3. Install dependencies:
+   - pip install -r [requirements.txt](requirements.txt)
 
----
+## Usage
 
-## ⚙️ Installation & Setup
+Run any of the main flows via the CLI wrapper:
 
-### 1️⃣ Clone the Repository
-```bash
-git clone https://github.com/karimHADDAR/Pneumonia-detection-CNN-model.git
-cd Pneumonia-detection-CNN-model
-2️⃣ Create a Virtual Environment
-bash
-Copy code
-python -m venv .venv
-.\.venv\Scripts\activate
-3️⃣ Install Dependencies
-bash
-Copy code
-pip install -r requirements.txt
-🏋️ Train the Model
-Make sure your dataset is organized as:
+- Train:
+  - python [main.py](main.py) --mode train
+  - Internally calls [`train.run_training`](src/train.py). See [src/train.py](src/train.py) for hyperparameters to edit.
 
-kotlin
-Copy code
-data/
- ├── train/
- │    ├── NORMAL/
- │    └── PNEUMONIA/
- ├── val/
- └── test/
-Then run:
+- Evaluate:
+  - python [main.py](main.py) --mode eval
+  - Calls [`evaluate.run_evaluation`](src/evaluate.py) which calculates confusion matrix, classification report, and shows sample predictions.
 
-bash
-Copy code
-python train.py
-This will:
+- Predict (single image):
+  - python [main.py](main.py) --mode predict --image path/to/image.jpg
+  - Calls [`predict.run_prediction`](src/predict.py).
 
-Train the DenseNet121-based model
+Streamlit UI
+- Interactive demo:
+  - streamlit run [app.py](app.py)
+  - Upload an X-ray, get a prediction and confidence. The app loads the saved model from [runs/pneumonia_densenet121.h5](runs/pneumonia_densenet121.h5).
 
-Fine-tune it on the validation data
+Notes on the model & scripts
+- The training pipeline uses a pretrained DenseNet121 backbone with a custom head in [src/train.py](src/train.py).
+- Saved model path used across scripts: `runs/pneumonia_densenet121.h5` — see [runs/pneumonia_densenet121.h5](runs/pneumonia_densenet121.h5).
+- Visual explanations: [`src.utils.generate_gradcam`](src/utils.py) produces a Grad-CAM heatmap for a given image and model.
 
-Save the trained model to runs/pneumonia_densenet121.h5
+Example commands
+- Full training (from CLI):
+  - python [main.py](main.py) --mode train
+- Evaluate:
+  - python [main.py](main.py) --mode eval
+- Predict:
+  - python [main.py](main.py) --mode predict --image examples/sample.jpg
+- Run Streamlit demo:
+  - streamlit run [app.py](app.py)
 
-🌐 Run the Streamlit App
-Once the model is trained (or downloaded), run the Streamlit web app:
+## Implementation details
+- Input resolution: 224×224
+- Backbone: DenseNet121 (pretrained on ImageNet), frozen first and then fine-tuned (see [src/train.py](src/train.py))
+- Loss: binary cross-entropy
+- Metrics: accuracy, ROC-AUC (computed in [src/train.py](src/train.py) / [src/evaluate.py](src/evaluate.py))
+- Augmentations: flips, small rotations, shifts and zooms (configured in [src/train.py](src/train.py))
 
-bash
-Copy code
-streamlit run app.py
-Open your browser and go to:
-👉 http://localhost:8501
+## Outputs & artifacts
+- Model checkpoints / final model: saved to `runs/` (example: [runs/pneumonia_densenet121.h5](runs/pneumonia_densenet121.h5))
+- Plots: training curves and sample prediction figures are generated inline by scripts (Matplotlib).
 
-You’ll see a web interface to upload chest X-ray images and visualize:
+## Troubleshooting
+- "Model file not found": ensure a model exists at [runs/pneumonia_densenet121.h5](runs/pneumonia_densenet121.h5) or re-run training.
+- Dataset not found: confirm [Data/chest_xray](Data/chest_xray) exists and follows the structure above.
+- GPU issues: verify TensorFlow sees your GPU (`tf.config.list_physical_devices('GPU')`), and use compatible CUDA/cuDNN versions.
 
-Prediction (Normal / Pneumonia)
+## Contributing
+- Report issues or request features via repository issues.
+- Preferred workflow: fork → feature branch → tests/docs → PR.
+- Keep changes focused; update README and [requirements.txt](requirements.txt) when adding dependencies.
 
-Grad-CAM attention heatmap
+## License
+Project is provided under an MIT-style license. Update LICENSE file as needed.
 
-🧠 Model Details
-The model uses DenseNet121 pretrained on ImageNet for feature extraction, with a custom classification head.
+## Useful source references in this repo
+- Training flow: [`train.run_training`](src/train.py) — [src/train.py](src/train.py)  
+- Evaluation flow: [`evaluate.run_evaluation`](src/evaluate.py) — [src/evaluate.py](src/evaluate.py)  
+- Prediction flow: [`predict.run_prediction`](src/predict.py) — [src/predict.py](src/predict.py)  
+- Grad-CAM util: [`src.utils.generate_gradcam`](src/utils.py) — [src/utils.py](src/utils.py)  
+- Streamlit app: [app.py](app.py)  
+- CLI launcher: [main.py](main.py)
 
-python
-Copy code
-base_model = DenseNet121(weights="imagenet", include_top=False, input_shape=(224,224,3))
-base_model.trainable = False
-model = models.Sequential([
-    base_model,
-    layers.GlobalAveragePooling2D(),
-    layers.Dropout(0.3),
-    layers.Dense(1, activation="sigmoid")
-])
-We then fine-tune the entire model with a smaller learning rate to improve accuracy.
+```// filepath: c:\Users\karim haddar24\pneumonia-cnn\README.md
 
-🩺 Explainability (Grad-CAM)
-The project includes Grad-CAM visualization to show which lung regions the model focused on.
-This helps doctors interpret predictions and verify that the model is learning meaningful features.
+# Pneumonia CNN
 
-Example:
+Lightweight, reproducible implementation of a convolutional neural network (CNN) to detect pneumonia from chest X-ray images using TensorFlow / Keras.
 
-Input X-ray	Grad-CAM Heatmap
+## Quick links
+- App: [app.py](app.py)  
+- CLI entry: [main.py](main.py) — calls [`train.run_training`](src/train.py), [`evaluate.run_evaluation`](src/evaluate.py), [`predict.run_prediction`](src/predict.py)  
+- Training script: [src/train.py](src/train.py) — contains [`train.run_training`](src/train.py)  
+- Evaluation script: [src/evaluate.py](src/evaluate.py) — contains [`evaluate.run_evaluation`](src/evaluate.py)  
+- Prediction script: [src/predict.py](src/predict.py) — contains [`predict.run_prediction`](src/predict.py)  
+- Grad-CAM util: [`src.utils.generate_gradcam`](src/utils.py) — [src/utils.py](src/utils.py)  
+- Dataset root: [Data/chest_xray](Data/chest_xray)  
+- Saved model (example): [runs/pneumonia_densenet121.h5](runs/pneumonia_densenet121.h5)  
+- Dependencies: [requirements.txt](requirements.txt)  
+- Git ignore: [.gitignore](.gitignore)
 
-📊 Evaluation
-Metric	Value
-Validation Accuracy	~92%
-Test ROC-AUC	~0.95
+## Overview
+This project trains a DenseNet121-based classifier to distinguish between NORMAL and PNEUMONIA chest X-rays. It includes training, evaluation, single-image prediction, a Streamlit demo app, and a Grad-CAM utility for visualizing model attention.
 
-(Values may vary depending on training configuration)
+## Dataset
+Expected layout (already present under [Data/chest_xray](Data/chest_xray)):
 
-🧾 Requirements
-Main libraries used:
+data/chest_xray/
+- train/
+  - NORMAL/
+  - PNEUMONIA/
+- val/
+  - NORMAL/
+  - PNEUMONIA/
+- test/
+  - NORMAL/
+  - PNEUMONIA/
 
-TensorFlow / Keras
+Ensure patient-level separation between splits to avoid data leakage.
 
-NumPy
+## Requirements
+- Python 3.8+
+- GPU recommended for training
+- Install dependencies:
+  - pip install -r [requirements.txt](requirements.txt)
 
-scikit-learn
+## Install & setup
+1. Clone the repository.
+2. Create and activate a virtual environment:
+   - python -m venv .venv
+   - Windows: .venv\Scripts\activate
+   - macOS/Linux: source .venv/bin/activate
+3. Install dependencies:
+   - pip install -r [requirements.txt](requirements.txt)
 
-OpenCV
+## Usage
 
-Matplotlib
+Run any of the main flows via the CLI wrapper:
 
-Streamlit
+- Train:
+  - python [main.py](main.py) --mode train
+  - Internally calls [`train.run_training`](src/train.py). See [src/train.py](src/train.py) for hyperparameters to edit.
 
-Install all with:
+- Evaluate:
+  - python [main.py](main.py) --mode eval
+  - Calls [`evaluate.run_evaluation`](src/evaluate.py) which calculates confusion matrix, classification report, and shows sample predictions.
 
-bash
-Copy code
-pip install -r requirements.txt
-📦 Model Download
-You can download the pretrained model from external storage:
-👉 Google Drive Link
+- Predict (single image):
+  - python [main.py](main.py) --mode predict --image path/to/image.jpg
+  - Calls [`predict.run_prediction`](src/predict.py).
 
-Save it to:
+Streamlit UI
+- Interactive demo:
+  - streamlit run [app.py](app.py)
+  - Upload an X-ray, get a prediction and confidence. The app loads the saved model from [runs/pneumonia_densenet121.h5](runs/pneumonia_densenet121.h5).
 
-bash
-Copy code
-runs/pneumonia_densenet121.h5
+Notes on the model & scripts
+- The training pipeline uses a pretrained DenseNet121 backbone with a custom head in [src/train.py](src/train.py).
+- Saved model path used across scripts: `runs/pneumonia_densenet121.h5` — see [runs/pneumonia_densenet121.h5](runs/pneumonia_densenet121.h5).
+- Visual explanations: [`src.utils.generate_gradcam`](src/utils.py) produces a Grad-CAM heatmap for a given image and model.
 
-🧑‍💻 Author
+Example commands
+- Full training (from CLI):
+  - python [main.py](main.py) --mode train
+- Evaluate:
+  - python [main.py](main.py) --mode eval
+- Predict:
+  - python [main.py](main.py) --mode predict --image examples/sample.jpg
+- Run Streamlit demo:
+  - streamlit run [app.py](app.py)
 
-Karim Haddar
-📧 karimhaddar24@example.com
+## Implementation details
+- Input resolution: 224×224
+- Backbone: DenseNet121 (pretrained on ImageNet), frozen first and then fine-tuned (see [src/train.py](src/train.py))
+- Loss: binary cross-entropy
+- Metrics: accuracy, ROC-AUC (computed in [src/train.py](src/train.py) / [src/evaluate.py](src/evaluate.py))
+- Augmentations: flips, small rotations, shifts and zooms (configured in [src/train.py](src/train.py))
 
-🔗 GitHub 
+## Outputs & artifacts
+- Model checkpoints / final model: saved to `runs/` (example: [runs/pneumonia_densenet121.h5](runs/pneumonia_densenet121.h5))
+- Plots: training curves and sample prediction figures are generated inline by scripts (Matplotlib).
 
+## Troubleshooting
+- "Model file not found": ensure a model exists at [runs/pneumonia_densenet121.h5](runs/pneumonia_densenet121.h5) or re-run training.
+- Dataset not found: confirm [Data/chest_xray](Data/chest_xray) exists and follows the structure above.
+- GPU issues: verify TensorFlow sees your GPU (`tf.config.list_physical_devices('GPU')`), and use compatible CUDA/cuDNN versions.
 
-🔗 LinkedIn
+## Contributing
+- Report issues or request features via repository issues.
+- Preferred workflow: fork → feature branch → tests/docs → PR.
+- Keep changes focused; update README and [requirements.txt](requirements.txt) when adding dependencies.
 
+## License
+Project is provided under an MIT-style license. Update LICENSE file as needed.
 
-
-⭐ Acknowledgements
-
-Dataset: Chest X-Ray Images (Pneumonia) - Kaggle
-
-Pretrained model: DenseNet121 (ImageNet)
+## Useful source references in this repo
+- Training flow: [`train.run_training`](src/train.py) — [src/train.py](src/train.py)  
+- Evaluation flow: [`evaluate.run_evaluation`](src/evaluate.py) — [src/evaluate.py](src/evaluate.py)  
+- Prediction flow: [`predict.run_prediction`](src/predict.py) — [src/predict.py](src/predict.py)  
+- Grad-CAM util: [`src.utils.generate_gradcam`](src/utils.py) — [src/utils.py](src/utils.py)  
+- Streamlit app: [app.py](app.py)  
+- CLI launcher: [main.py](main.py)
